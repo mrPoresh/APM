@@ -1,5 +1,5 @@
-__start__: obj __lines_for_space__ interp __plugin__
-	export LD_LIBRARY_PATH="./libs"; ./interp
+__start__: obj __lines_for_space__ interp xmlinterp4config __plugin__
+	export LD_LIBRARY_PATH="./libs"; ./interp | (echo; echo; cat)
 
 obj:
 	mkdir obj
@@ -16,17 +16,24 @@ __lines_for_space__:
 __plugin__:
 	cd plugin; make
 
-CPPFLAGS=-Wall -pedantic -std=c++17 -Iinc
-LDFLAGS=-Wall
+
+CPPFLAGS = -Wall -g -pedantic -std=c++17 -Iinc
+LDFLAGS = -Wall
 
 
 
 
-interp: obj/main.o
-	g++ ${LDFLAGS} -o interp  obj/main.o -ldl
+xmlinterp4config: obj/xmlinterp.o obj/main.o
+	g++ ${LDFLAGS} -o xmlinterp4config obj/xmlinterp.o obj/main.o -lxerces-c
+
+interp: obj/xmlinterp.o obj/main.o
+	g++ ${LDFLAGS} -o interp obj/xmlinterp.o obj/main.o -ldl -lxerces-c
+
+obj/xmlinterp.o: src/xmlinterp.cpp inc/xmlinterp.hh
+	g++ -c ${CPPFLAGS} -o obj/xmlinterp.o src/xmlinterp.cpp
 
 obj/main.o: src/main.cpp inc/AbstractInterp4Command.hh inc/AbstractScene.hh\
-            inc/AbstractComChannel.hh
+            inc/AbstractComChannel.hh inc/xmlinterp.hh
 	g++ -c ${CPPFLAGS} -o obj/main.o src/main.cpp
 
 doc:

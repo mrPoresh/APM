@@ -1,5 +1,5 @@
-#ifndef  COMMAND4MOVE_HH
-#define  COMMAND4MOVE_HH
+#ifndef  COMMAND4ROTATE_HH
+#define  COMMAND4ROTATE_HH
 
 #ifndef __GNUG__
 # pragma interface
@@ -20,22 +20,23 @@
  *
  *  Klasa modeluj47e ...
  */
-class Interp4Move: public AbstractInterp4Command {
+class Interp4Rotate: public AbstractInterp4Command {
   /*
    *  Tu należy zdefiniować pola, które są niezbędne
    *  do przechowywania wartości parametrów danego polecenia.
    *  Ponieżej zdefiniowane jest tylko jedno pole jako przykład.
    */
-
+  
   std::string Object_name;
-  double Speed_mmS;
-  double Length;
+  std::string Axis_name;
+  double Angle_speed;
+  double Angle;
 
   public:
   /*!
    * \brief
    */
-  Interp4Move();  
+  Interp4Rotate();  
   /*!
    * \brief Wyświetla postać bieżącego polecenia (nazwę oraz wartości parametrów)
    */
