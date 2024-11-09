@@ -1,25 +1,19 @@
 #include <iostream>
-#include <dlfcn.h>
 #include <sstream>
-#include <list>
-#include <string>
 #include <memory>
-#include <vector> 
 
-#include "AbstractInterp4Command.hh"
 #include "xmlinterp.hh"
+#include "Set4LibInterfaces.hh"
+#include "AbstractInterp4Command.hh"
+
 #include <xercesc/sax2/SAX2XMLReader.hpp>
 #include <xercesc/sax2/XMLReaderFactory.hpp>
-#include <xercesc/sax2/DefaultHandler.hpp>
 #include <xercesc/util/XMLString.hpp>
-
-#define LINE_SIZE 500
 
 using namespace std;
 using namespace xercesc;
 
 bool InitializeXMLParser() {
-
     try {
         XMLPlatformUtils::Initialize();
 
@@ -30,19 +24,6 @@ bool InitializeXMLParser() {
 
         return false;
     }
-
-    return true;
-}
-
-bool LoadGrammar(SAX2XMLReader* parser, const char* schemaFile) {
-    if (!parser->loadGrammar(schemaFile, Grammar::SchemaGrammarType, true)) {
-        cerr << "Failed to load grammar from: " << schemaFile << endl;
-
-        return false;
-    }
-
-    parser->setFeature(XMLUni::fgXercesUseCachedGrammarInParse, true);
-
     return true;
 }
 
@@ -60,24 +41,28 @@ bool ReadFile(const char* fileName, Configuration& config) {
     parser->setErrorHandler(handler.get());
 
     try {
-        if (!LoadGrammar(parser.get(), "config/config.xsd")) return false;
+        if (!parser->loadGrammar("config/config.xsd", Grammar::SchemaGrammarType, true)) {
+            cerr << "Failed to load grammar from config/config.xsd\n";
+            return false;
+        }
+
+        parser->setFeature(XMLUni::fgXercesUseCachedGrammarInParse, true);
         parser->parse(fileName);
 
     } catch (const XMLException& ex) {
         char* message = XMLString::transcode(ex.getMessage());
         cerr << "XML Exception: " << message << "\n";
         XMLString::release(&message);
+
         return false;
-        
     } catch (const SAXParseException& ex) {
         char* message = XMLString::transcode(ex.getMessage());
-        cerr << "Parse Error at line " << ex.getLineNumber() << ", column " << ex.getColumnNumber() << ": " << message << "\n";
+        cerr << "Parse Error: " << message << "\n";
         XMLString::release(&message);
+
         return false;
-        
     } catch (...) {
         cerr << "Unexpected exception occurred.\n";
-
         return false;
     }
 
@@ -86,86 +71,66 @@ bool ReadFile(const char* fileName, Configuration& config) {
 
 bool RunPreprocessor(const char* fileName, istringstream& inputStream) {
     string command = "cpp -P " + string(fileName);
-    char line[LINE_SIZE];
+    char line[500];
     ostringstream outputStream;
 
     FILE* process = popen(command.c_str(), "r");
     if (!process) return false;
 
-    while (fgets(line, LINE_SIZE, process)) {
+    while (fgets(line, sizeof(line), process)) {
         outputStream << line;
     }
 
     inputStream.str(outputStream.str());
-
     return pclose(process) == 0;
 }
 
-AbstractInterp4Command* LoadPlugin(const char* libraryName) {
-    void* libraryHandle = dlopen(libraryName, RTLD_LAZY);
-    if (!libraryHandle) {
-        cerr << "Library not found: " << libraryName << endl;
-        return nullptr;
-    }
-
-    void* createFunc = dlsym(libraryHandle, "CreateCmd");
-    if (!createFunc) {
-        cerr << "Function CreateCmd not found in " << libraryName << endl;
-        dlclose(libraryHandle);
-        return nullptr;
-    }
-
-    using CreateCmdFunc = AbstractInterp4Command* (*)();
-    CreateCmdFunc createCommand = reinterpret_cast<CreateCmdFunc>(createFunc);
-    return createCommand();
-}
-
 int main() {
+    // Load configuration file
     Configuration config;
     if (!ReadFile("config/config.xml", config)) return 1;
 
+    // Preprocess command file
     istringstream commandStream;
     if (!RunPreprocessor("cmd_list.txt", commandStream)) {
         cerr << "Error running preprocessor.\n";
+
         return 1;
     }
 
-    struct CommandInfo {
-        const char* name;
-        unique_ptr<AbstractInterp4Command> command;
-    };
-    
-    vector<CommandInfo> commands;
-    commands.emplace_back(CommandInfo{"Set", std::move(unique_ptr<AbstractInterp4Command>(LoadPlugin("libInterp4Set.so")))});
-    commands.emplace_back(CommandInfo{"Move", std::move(unique_ptr<AbstractInterp4Command>(LoadPlugin("libInterp4Move.so")))});
-    commands.emplace_back(CommandInfo{"Rotate", std::move(unique_ptr<AbstractInterp4Command>(LoadPlugin("libInterp4Rotate.so")))});
-    commands.emplace_back(CommandInfo{"Pause", std::move(unique_ptr<AbstractInterp4Command>(LoadPlugin("libInterp4Pause.so")))});
-
-    for (const auto& cmdInfo : commands) {
-        if (!cmdInfo.command) {
-            cerr << "Failed to initialize command: " << cmdInfo.name << endl;
-            return 1;
-        }
+    // Set up plugins with Set4LibInterfaces
+    Set4LibInterfaces pluginManager;
+    if (!pluginManager.addLibrary("libInterp4Set.so", "Set") ||
+        !pluginManager.addLibrary("libInterp4Move.so", "Move") ||
+        !pluginManager.addLibrary("libInterp4Rotate.so", "Rotate") ||
+        !pluginManager.addLibrary("libInterp4Pause.so", "Pause")) {
+        cerr << "Error loading libraries.\n";
+        return 1;
     }
 
+    // Read and execute commands from commandStream
     string commandName;
     while (commandStream >> commandName) {
-        bool found = false;
-
-        for (auto& cmdInfo : commands) {
-            if (commandName == cmdInfo.name) {
-                cmdInfo.command->ReadParams(commandStream);
-                cmdInfo.command->PrintCmd();
-                found = true;
-                break;
-            }
-        }
-
-        if (!found) {
-            cerr << "Unknown command in file: " << commandName << endl;
+        // Find the matching plugin for the command
+        LibInterface* commandInterface = pluginManager.getInterface(commandName);
+        if (!commandInterface) {
+            cerr << "Unknown command: " << commandName << endl;
             return 2;
         }
+
+        AbstractInterp4Command* command = commandInterface->getCommandInstance();
+        if (!command) {
+            cerr << "Failed to retrieve command instance for: " << commandName << endl;
+            return 2;
+        }
+
+        // Read and execute the command
+        command->ReadParams(commandStream);
+        command->PrintCmd();
     }
+
+    cout << "\nProgram End\n\n";
 
     return 0;
 }
+

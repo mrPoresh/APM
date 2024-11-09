@@ -1,14 +1,15 @@
-
-
-__start__: obj __lines_for_space__  ../libs/libInterp4Move.so\
-									../libs/libInterp4Pause.so\
-				   					../libs/libInterp4Rotate.so\
-				   					../libs/libInterp4Set.so
-	@echo "  Tworzenie wtyczki zakonczone."
+__start__: obj libs __lines_for_space__  ../libs/libInterp4Move.so\
+                                    ../libs/libInterp4Pause.so\
+                                    ../libs/libInterp4Rotate.so\
+                                    ../libs/libInterp4Set.so
+	@echo "Tworzenie wtyczki zakonczone."
 	@echo
 
 obj:
-	mkdir obj
+	mkdir -p obj  # Create obj directory if it doesn't exist
+
+libs:
+	mkdir -p ../libs  # Create libs directory if it doesn't exist
 
 CPPFLAGS=-Wall -fPIC -pedantic -std=c++17 -Iinc -I../inc
 LDFLAGS=-Wall -shared
@@ -25,9 +26,8 @@ __lines_for_space__:
 ../libs/libInterp4Move.so: obj/Interp4Move.o
 	g++ ${LDFLAGS} -o ../libs/libInterp4Move.so obj/Interp4Move.o
 	@echo
-	@echo "  Wtyczka dla polecenia 'Move' zostala utworzona."
+	@echo "Wtyczka dla polecenia 'Move' zostala utworzona."
 	@echo
-
 
 obj/Interp4Move.o: src/Interp4Move.cpp ../inc/AbstractInterp4Command.hh\
                    ../inc/AbstractScene.hh ../inc/AbstractComChannel.hh\
@@ -39,7 +39,7 @@ obj/Interp4Move.o: src/Interp4Move.cpp ../inc/AbstractInterp4Command.hh\
 ../libs/libInterp4Pause.so: obj/Interp4Pause.o
 	g++ ${LDFLAGS} -o ../libs/libInterp4Pause.so obj/Interp4Pause.o
 	@echo
-	@echo "  Wtyczka dla polecenia 'Pause' zostala utworzona."
+	@echo "Wtyczka dla polecenia 'Pause' zostala utworzona."
 	@echo
 
 obj/Interp4Pause.o: src/Interp4Pause.cpp ../inc/AbstractInterp4Command.hh\
@@ -52,7 +52,7 @@ obj/Interp4Pause.o: src/Interp4Pause.cpp ../inc/AbstractInterp4Command.hh\
 ../libs/libInterp4Rotate.so: obj/Interp4Rotate.o
 	g++ ${LDFLAGS} -o ../libs/libInterp4Rotate.so obj/Interp4Rotate.o
 	@echo
-	@echo "  Wtyczka dla polecenia 'Rotate' zostala utworzona."
+	@echo "Wtyczka dla polecenia 'Rotate' zostala utworzona."
 	@echo
 
 obj/Interp4Rotate.o: src/Interp4Rotate.cpp ../inc/AbstractInterp4Command.hh\
@@ -65,9 +65,8 @@ obj/Interp4Rotate.o: src/Interp4Rotate.cpp ../inc/AbstractInterp4Command.hh\
 ../libs/libInterp4Set.so: obj/Interp4Set.o
 	g++ ${LDFLAGS} -o ../libs/libInterp4Set.so obj/Interp4Set.o
 	@echo
-	@echo "  Wtyczka dla polecenia 'Set' zostala utworzona."
+	@echo "Wtyczka dla polecenia 'Set' zostala utworzona."
 	@echo
-
 
 obj/Interp4Set.o: src/Interp4Set.cpp ../inc/AbstractInterp4Command.hh\
                    ../inc/AbstractScene.hh ../inc/AbstractComChannel.hh\
@@ -81,3 +80,4 @@ clean:
 
 cleanall: clean
 	find . -name \*~ -print -exec rm {} \;
+
