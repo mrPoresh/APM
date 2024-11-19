@@ -1,27 +1,19 @@
+.PHONY: __start__ obj __lines_for_space__ __plugin__ doc clean clean_plugin cleanall help
+
 __start__: obj __lines_for_space__ interp xmlinterp4config __plugin__
-	export LD_LIBRARY_PATH="./libs"; ./interp | (echo; echo; cat)
+	LD_LIBRARY_PATH="./libs:$$LD_LIBRARY_PATH" ./interp | (echo; echo; cat)
 
 obj:
-	mkdir obj
-
+	mkdir -p obj
 
 __lines_for_space__:
-	@echo
-	@echo
-	@echo
-	@echo
-	@echo
-
+	@printf "\n%.0s" {1..5}
 
 __plugin__:
-	cd plugin; make
-
+	$(MAKE) -C plugin || exit 1
 
 CPPFLAGS = -Wall -g -pedantic -std=c++17 -Iinc
 LDFLAGS = -Wall
-
-
-
 
 xmlinterp4config: obj/xmlinterp.o obj/main.o
 	g++ ${LDFLAGS} -o xmlinterp4config obj/xmlinterp.o obj/main.o -lxerces-c
@@ -29,29 +21,28 @@ xmlinterp4config: obj/xmlinterp.o obj/main.o
 interp: obj/xmlinterp.o obj/main.o
 	g++ ${LDFLAGS} -o interp obj/xmlinterp.o obj/main.o -ldl -lxerces-c
 
-obj/xmlinterp.o: src/xmlinterp.cpp inc/xmlinterp.hh
+obj/xmlinterp.o: src/xmlinterp.cpp inc/xmlinterp.hh | obj
 	g++ -c ${CPPFLAGS} -o obj/xmlinterp.o src/xmlinterp.cpp
 
 obj/main.o: src/main.cpp inc/AbstractInterp4Command.hh inc/AbstractScene.hh\
             inc/AbstractComChannel.hh inc/xmlinterp.hh inc/LibInterface.hh\
-            inc/Set4LibInterfaces.hh
+            inc/Set4LibInterfaces.hh | obj
 	g++ -c ${CPPFLAGS} -o obj/main.o src/main.cpp
 
 doc:
-	cd dox; make
+	$(MAKE) -C dox || exit 1
 
 clean:
-	rm -f obj/* interp core*
-
+	rm -f obj/* interp xmlinterp4config core*
 
 clean_plugin:
-	cd plugin; make clean
+	$(MAKE) -C plugin clean || exit 1
 
-cleanall: clean
-	cd plugin; make cleanall
-	cd dox; make cleanall
+cleanall: clean clean_plugin
 	rm -f libs/*
-	find . -name \*~ -print -exec rm {} \;
+	find . -name \*~ -exec rm {} \;
+	find . -name \*.o -exec rm {} \;
+	rm -f xmlinterp4config interp
 
 help:
 	@echo
@@ -70,4 +61,3 @@ help:
 	@echo "  make           # kompilacja i uruchomienie programu."
 	@echo "  make clean     # usuwa produkty kompilacji."
 	@echo
- 

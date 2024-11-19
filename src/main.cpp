@@ -98,17 +98,38 @@ int main() {
         return 1;
     }
 
-    // Set up plugins with Set4LibInterfaces
+    // // Set up plugins with Set4LibInterfaces
+    // Set4LibInterfaces pluginManager;
+    // if (!pluginManager.addLibrary("libInterp4Set.so", "Set") ||
+    //     !pluginManager.addLibrary("libInterp4Move.so", "Move") ||
+    //     !pluginManager.addLibrary("libInterp4Rotate.so", "Rotate") ||
+    //     !pluginManager.addLibrary("libInterp4Pause.so", "Pause")) {
+    //     cerr << "Error loading libraries.\n";
+    //     return 1;
+    // }
+
+    // Set up plugins using the configuration
     Set4LibInterfaces pluginManager;
-    if (!pluginManager.addLibrary("libInterp4Set.so", "Set") ||
-        !pluginManager.addLibrary("libInterp4Move.so", "Move") ||
-        !pluginManager.addLibrary("libInterp4Rotate.so", "Rotate") ||
-        !pluginManager.addLibrary("libInterp4Pause.so", "Pause")) {
-        cerr << "Error loading libraries.\n";
-        return 1;
+    const auto& libs = config.GetLibs();
+    config.Print();
+    std::cout << std::flush;
+
+    for (const auto& lib : libs) {
+        std::cout << "Lib name " << lib << "\n";
+
+        // Use the library name as both the file name and the identifier (if no specific identifier is needed)
+        std::string identifier = lib.substr(lib.find_last_of('/') + 1); // Extract filename as identifier
+        identifier = identifier.substr(0, identifier.find_last_of('.')); // Remove extension
+
+        std::cout << "Lib identifier " << identifier << "\n";
+
+        if (!pluginManager.addLibrary(lib, identifier)) {
+            std::cerr << "Error loading library: " << lib << "\n";
+            return 1;
+        }
     }
 
-    // Read and execute commands from commandStream
+    // Read and execute commands from commandStream # TODO: READ CMD FROM CONF
     string commandName;
     while (commandStream >> commandName) {
         // Find the matching plugin for the command
