@@ -5,6 +5,7 @@
 #include "xmlinterp.hh"
 #include "Set4LibInterfaces.hh"
 #include "AbstractInterp4Command.hh"
+#include "Sender.hh"
 
 #include <xercesc/sax2/SAX2XMLReader.hpp>
 #include <xercesc/sax2/XMLReaderFactory.hpp>
@@ -91,12 +92,12 @@ int main() {
     if (!ReadFile("config/config.xml", config)) return 1;
 
     // Preprocess command file
-    istringstream commandStream;
-    if (!RunPreprocessor("cmd_list.txt", commandStream)) {
-        cerr << "Error running preprocessor.\n";
+    // istringstream commandStream;
+    // if (!RunPreprocessor("cmd_list.txt", commandStream)) {
+    //     cerr << "Error running preprocessor.\n";
 
-        return 1;
-    }
+    //     return 1;
+    // }
 
     // // Set up plugins with Set4LibInterfaces
     // Set4LibInterfaces pluginManager;
@@ -112,16 +113,16 @@ int main() {
     Set4LibInterfaces pluginManager;
     const auto& libs = config.GetLibs();
     config.Print();
-    std::cout << std::flush;
+    //std::cout << std::flush;
 
     for (const auto& lib : libs) {
-        std::cout << "Lib name " << lib << "\n";
+        //std::cout << "Lib name " << lib << "\n";
 
         // Use the library name as both the file name and the identifier (if no specific identifier is needed)
         std::string identifier = lib.substr(lib.find_last_of('/') + 1); // Extract filename as identifier
-        identifier = identifier.substr(0, identifier.find_last_of('.')); // Remove extension
+        identifier = identifier.substr(0, identifier.find_last_of('.'));
 
-        std::cout << "Lib identifier " << identifier << "\n";
+        //std::cout << "Lib identifier " << identifier << "\n";
 
         if (!pluginManager.addLibrary(lib, identifier)) {
             std::cerr << "Error loading library: " << lib << "\n";
@@ -129,26 +130,40 @@ int main() {
         }
     }
 
-    // Read and execute commands from commandStream # TODO: READ CMD FROM CONF
-    string commandName;
-    while (commandStream >> commandName) {
-        // Find the matching plugin for the command
-        LibInterface* commandInterface = pluginManager.getInterface(commandName);
-        if (!commandInterface) {
-            cerr << "Unknown command: " << commandName << endl;
-            return 2;
-        }
-
-        AbstractInterp4Command* command = commandInterface->getCommandInstance();
-        if (!command) {
-            cerr << "Failed to retrieve command instance for: " << commandName << endl;
-            return 2;
-        }
-
-        // Read and execute the command
-        command->ReadParams(commandStream);
-        command->PrintCmd();
+    Sender sender(config.GetCubes());
+    if (!sender.Connect("127.0.0.1", 6217)) {
+        return 1;
     }
+
+    // Start communication in a separate thread
+    sender.Start();
+
+    // Simulate additional logic or wait for completion
+    usleep(2000000); // Wait for 2 seconds
+
+    // Stop communication
+    sender.Stop();
+
+    // Read and execute commands from commandStream # TODO: READ CMD FROM CONF
+    // string commandName;
+    // while (commandStream >> commandName) {
+    //     // Find the matching plugin for the command
+    //     LibInterface* commandInterface = pluginManager.getInterface(commandName);
+    //     if (!commandInterface) {
+    //         cerr << "Unknown command: " << commandName << endl;
+    //         return 2;
+    //     }
+
+    //     AbstractInterp4Command* command = commandInterface->getCommandInstance();
+    //     if (!command) {
+    //         cerr << "Failed to retrieve command instance for: " << commandName << endl;
+    //         return 2;
+    //     }
+
+    //     // Read and execute the command
+    //     command->ReadParams(commandStream);
+    //     command->PrintCmd();
+    // }
 
     cout << "\nProgram End\n\n";
 
