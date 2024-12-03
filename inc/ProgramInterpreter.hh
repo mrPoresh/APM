@@ -42,13 +42,21 @@ private:
     bool LoadCommands(const std::string& commandsPath);
 
     /*!
+     * \brief Loads commands from the command file.
+     * \param[in] commandsPath - Path to the commands file.
+     * \return True if commands are loaded successfully.
+     */
+    bool LoadLibraries();
+
+    /*!
      * \brief Initializes the XML parser.
      * \return True if the XML parser initializes successfully.
      */
     bool InitializeXMLParser();
 
     //Scene scene; //!< Instance of the Scene class.
-    Configuration config; //!< Configuration object.
+    Configuration config;   //!< Configuration object.
+    Set4LibInterfaces plugins;    //!< Keep Lis
 };
 
 #endif

@@ -55,7 +55,6 @@ void XMLInterp4Config::ProcessLibAttrs(const xercesc::Attributes  &rAttrs)
 
     cout << "  Nazwa biblioteki: " << sLibName << endl;
 
-    // Tu trzeba wpisać własny kod ...
     rConfig.AddLib(sLibName);
 
     xercesc::XMLString::release(&sParamName);
@@ -115,7 +114,7 @@ void XMLInterp4Config::ProcessCubeAttrs(const xercesc::Attributes  &rAttrs)
         std::cout << "  RGB: " << rgb << std::endl;
 
         // Add CubeConfig to Configuration
-        rConfig.AddCube(CubeConfig(sName, scale, shift, rotation, translation, rgb));
+        //rConfig.AddCube(CubeConfig(sName, scale, shift, rotation, translation, rgb));
         
     } catch (...) {
         std::cerr << "Error processing Cube attributes.\n";

@@ -2,6 +2,8 @@
 #include <iostream>
 #include <fstream>
 #include <memory>
+#include <string>
+#include <sstream>
 #include <xercesc/sax2/SAX2XMLReader.hpp>
 #include <xercesc/sax2/XMLReaderFactory.hpp>
 #include <xercesc/util/XMLString.hpp>
@@ -14,10 +16,20 @@ bool ProgramInterpreter::Init(const std::string& configPath, const std::string& 
         return false;
     }
 
+    if (!LoadLibraries()) {
+        std::cerr << "Failed to load libraries from configuration." << std::endl;
+        return false;
+    }
+
     if (!LoadCommands(commandsPath)) {
         std::cerr << "Failed to load commands from: " << commandsPath << std::endl;
         return false;
     }
+
+    std::cout << "Initialization successful!" << std::endl;
+
+    config.Print();
+    config.PrintCommands();
 
     return true;
 }
@@ -74,6 +86,7 @@ bool ProgramInterpreter::InitializeXMLParser() {
         XMLString::release(&message);
         return false;
     }
+
     return true;
 }
 
@@ -84,10 +97,86 @@ bool ProgramInterpreter::LoadCommands(const std::string& commandsPath) {
         return false;
     }
 
-    std::string command;
-    while (std::getline(file, command)) {
-        // Handle Comand
-        std::cout << "Loaded command: " << command << std::endl;
+    std::list<AbstractInterp4Command*> parallelCommands; // Temporary for parallel commands
+    bool inParallelBlock = false;
+
+    std::string line;
+    while (std::getline(file, line)) {
+        // Ignore empty lines or comments
+        if (line.empty() || line[0] == '#' || line.substr(0, 2) == "//") {
+            continue;
+        }
+
+        // Detect ParallelStart and ParallelEnd
+        if (line == "ParalelStart") {
+            if (inParallelBlock) {
+                std::cerr << "Error: Nested ParalelStart detected" << std::endl;
+                return false;
+            }
+            inParallelBlock = true;
+            parallelCommands.clear();
+            continue;
+        }
+
+        if (line == "ParalelEnd") {
+            if (!inParallelBlock) {
+                std::cerr << "Error: ParalelEnd without matching ParalelStart" << std::endl;
+                return false;
+            }
+
+            config.AddParallelCommands(parallelCommands);
+            inParallelBlock = false;
+            continue;
+        }
+
+        //Parse command
+        std::istringstream stream(line);
+        std::string cmdName;
+        stream >> cmdName;
+
+        //std::cout << cmdName << "\n";
+
+        LibInterface* libInterface = plugins.getInterface(cmdName);
+        if (!libInterface) {
+            std::cerr << "Error: Command not found in plugins: " << cmdName << std::endl;
+            return false;
+        }
+
+        auto command = libInterface->getCommandInstance();
+        if (!command->ReadParams(stream)) {
+            std::cerr << "Error reading parameters for command: " << cmdName << std::endl;
+            return false;
+        }
+
+        command->PrintCmd();
+
+        // Add the command to the appropriate list
+        if (inParallelBlock) {
+            parallelCommands.push_back(command);
+        } else {
+            config.AddStandaloneCommand(command);
+        }
+    }
+
+    if (inParallelBlock) {
+        std::cerr << "Error: Unclosed ParalelStart block" << std::endl;
+        return false;
+    }
+
+    return true;
+}
+
+
+bool ProgramInterpreter::LoadLibraries() {
+    const auto& libs = config.GetLibs();
+    for (const auto& libName : libs) {
+        std::string libPath = "libs/" + libName;
+        std::string commandName = config.GetCommandName(libName);
+
+        if (!plugins.addLibrary(libPath, commandName)) {
+            std::cerr << "Error loading library: " << libPath << "\n";
+            return false;
+        }
     }
 
     return true;

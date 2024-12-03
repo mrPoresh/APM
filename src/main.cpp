@@ -15,77 +15,6 @@
 using namespace std;
 using namespace xercesc;
 
-// bool InitializeXMLParser() {
-//     try {
-//         XMLPlatformUtils::Initialize();
-
-//     } catch (const XMLException& ex) {
-//         char* message = XMLString::transcode(ex.getMessage());
-//         cerr << "Error during initialization: " << message << "\n";
-//         XMLString::release(&message);
-
-//         return false;
-//     }
-//     return true;
-// }
-
-// bool ReadFile(const char* fileName, Configuration& config) {
-//     if (!InitializeXMLParser()) return false;
-
-//     unique_ptr<SAX2XMLReader> parser(XMLReaderFactory::createXMLReader());
-//     parser->setFeature(XMLUni::fgSAX2CoreNameSpaces, true);
-//     parser->setFeature(XMLUni::fgSAX2CoreValidation, true);
-//     parser->setFeature(XMLUni::fgXercesSchema, true);
-//     parser->setFeature(XMLUni::fgXercesValidationErrorAsFatal, true);
-
-//     unique_ptr<DefaultHandler> handler(new XMLInterp4Config(config));
-//     parser->setContentHandler(handler.get());
-//     parser->setErrorHandler(handler.get());
-
-//     try {
-//         if (!parser->loadGrammar("config/config.xsd", Grammar::SchemaGrammarType, true)) {
-//             cerr << "Failed to load grammar from config/config.xsd\n";
-//             return false;
-//         }
-
-//         parser->setFeature(XMLUni::fgXercesUseCachedGrammarInParse, true);
-//         parser->parse(fileName);
-
-//     } catch (const XMLException& ex) {
-//         char* message = XMLString::transcode(ex.getMessage());
-//         cerr << "XML Exception: " << message << "\n";
-//         XMLString::release(&message);
-
-//         return false;
-//     } catch (const SAXParseException& ex) {
-//         char* message = XMLString::transcode(ex.getMessage());
-//         cerr << "Parse Error: " << message << "\n";
-//         XMLString::release(&message);
-
-//         return false;
-//     } catch (...) {
-//         cerr << "Unexpected exception occurred.\n";
-//         return false;
-//     }
-
-//     return true;
-// }
-
-// bool RunPreprocessor(const char* fileName, istringstream& inputStream) {
-//     string command = "cpp -P " + string(fileName);
-//     char line[500];
-//     ostringstream outputStream;
-
-//     FILE* process = popen(command.c_str(), "r");
-//     if (!process) return false;
-
-//     while (fgets(line, sizeof(line), process)) {
-//         outputStream << line;
-//     }
-
-//     inputStream.str(outputStream.str());
-//     return pclose(process) == 0;
-// }
 
 int main(int argc, char* argv[]) {
     if (argc < 3 || argc > 3) {
@@ -181,7 +110,7 @@ int main(int argc, char* argv[]) {
     //     command->PrintCmd();
     // }
 
-    // cout << "\nProgram End\n\n";
+    cout << "\nProgram End\n\n";
 
     return 0;
 }
