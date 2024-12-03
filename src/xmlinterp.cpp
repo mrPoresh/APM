@@ -114,7 +114,7 @@ void XMLInterp4Config::ProcessCubeAttrs(const xercesc::Attributes  &rAttrs)
         std::cout << "  RGB: " << rgb << std::endl;
 
         // Add CubeConfig to Configuration
-        //rConfig.AddCube(CubeConfig(sName, scale, shift, rotation, translation, rgb));
+        rConfig.AddCube(CubeConfig(sName, scale, shift, rotation, translation, rgb));
         
     } catch (...) {
         std::cerr << "Error processing Cube attributes.\n";
@@ -132,64 +132,6 @@ void XMLInterp4Config::ProcessCubeAttrs(const xercesc::Attributes  &rAttrs)
     xercesc::XMLString::release(&sRot);
     xercesc::XMLString::release(&sTrans);
     xercesc::XMLString::release(&sRGB);
-
-    /*
-    *  Tutaj pobierane sa nazwy pierwszego i drugiego atrybuty.
-    *  Sprawdzamy, czy na pewno jest to Name i Value.
-    */
-
-    // char* sName_Name = xercesc::XMLString::transcode(rAttrs.getQName(0));
-    // char* sName_Scale = xercesc::XMLString::transcode(rAttrs.getQName(1));
-    // char* sName_RGB = xercesc::XMLString::transcode(rAttrs.getQName(2));
-
-    // XMLSize_t  Index = 0;
-    // char* sValue_Name    = xercesc::XMLString::transcode(rAttrs.getValue(Index));
-    // char* sValue_Scale = xercesc::XMLString::transcode(rAttrs.getValue(1));
-    // char* sValue_RGB     = xercesc::XMLString::transcode(rAttrs.getValue(2));
-
-
- //-----------------------------------------------------------------------------
- // Wyświetlenie nazw atrybutów i ich "wartości"
- //
-  //  cout << " Atrybuty:" << endl
-  //       << "     " << sName_Name << " = \"" << sValue_Name << "\"" << endl
-  //       << "     " << sName_Scale << " = \"" << sValue_Scale << "\"" << endl
-  //       << "     " << sName_RGB << " = \"" << sValue_RGB << "\"" << endl   
-  //       << endl; 
- //-----------------------------------------------------------------------------
- // Przykład czytania wartości parametrów
- // Ten przykład jest zrobiony "na piechotę" wykorzystując osobne zmienne.
- // Skala powinna być wektorem. Czytanie powinno być rezlizowane z wykorzysaniem
- // wektorów, np.
- //
- //
- // istringstream IStrm;
- // IStrm.str(sValue_Scale);
- // Vector3D  Scale;
- //
- // IStrm >> Scale;
- //
-//     istringstream   IStrm;
-    
-//     IStrm.str(sValue_Scale);
-//     double  Sx,Sy,Sz;
-
-//     IStrm >> Sx >> Sy >> Sz;
-//     if (IStrm.fail()) {
-//         cerr << " Blad!!!" << endl;
-//     } else {
-//         cout << " Czytanie wartosci OK!!!" << endl;
-//         cout << "     " << Sx << "  " << Sy << "  " << Sz << endl;
-//     }
-
-//  // Tu trzeba wstawić odpowiednio własny kod ...
-
-//     xercesc::XMLString::release(&sName_Name);
-//     xercesc::XMLString::release(&sName_Scale);
-//     xercesc::XMLString::release(&sName_RGB);
-//     xercesc::XMLString::release(&sValue_Name);
-//     xercesc::XMLString::release(&sValue_Scale);
-//     xercesc::XMLString::release(&sValue_RGB);
 }
 
 

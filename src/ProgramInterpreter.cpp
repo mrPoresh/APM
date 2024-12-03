@@ -21,6 +21,11 @@ bool ProgramInterpreter::Init(const std::string& configPath, const std::string& 
         return false;
     }
 
+    if (!LoadObjects()) {
+        std::cerr << "Failed to load objects into the scene." << std::endl;
+        return false;
+    }
+
     if (!LoadCommands(commandsPath)) {
         std::cerr << "Failed to load commands from: " << commandsPath << std::endl;
         return false;
@@ -91,6 +96,7 @@ bool ProgramInterpreter::InitializeXMLParser() {
 }
 
 bool ProgramInterpreter::LoadCommands(const std::string& commandsPath) {
+    std::cout << "Loading comands..." << std::endl;
     std::ifstream file(commandsPath);
     if (!file.is_open()) {
         std::cerr << "Error: Unable to open commands file: " << commandsPath << std::endl;
@@ -148,7 +154,7 @@ bool ProgramInterpreter::LoadCommands(const std::string& commandsPath) {
             return false;
         }
 
-        command->PrintCmd();
+        //command->PrintCmd();
 
         // Add the command to the appropriate list
         if (inParallelBlock) {
@@ -166,8 +172,28 @@ bool ProgramInterpreter::LoadCommands(const std::string& commandsPath) {
     return true;
 }
 
+bool ProgramInterpreter::LoadObjects() {
+    std::cout << "Loading objects into the scene..." << std::endl;
+
+    for (const auto& cubeConfig : config.GetCubes()) {
+        auto* cuboid = new Cuboid(
+            cubeConfig.Name,
+            cubeConfig.Translation,
+            cubeConfig.Scale,
+            cubeConfig.Rotation,
+            cubeConfig.RGB
+        );
+
+        scene.AddMobileObj(cuboid);
+        std::cout << "Added object: " << cuboid->GetName() << std::endl;
+    }
+
+    return true;
+}
+
 
 bool ProgramInterpreter::LoadLibraries() {
+    std::cout << "Loading Libs..." << std::endl;
     const auto& libs = config.GetLibs();
     for (const auto& libName : libs) {
         std::string libPath = "libs/" + libName;
