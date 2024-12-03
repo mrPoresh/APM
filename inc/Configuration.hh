@@ -11,8 +11,8 @@ public:
     
     Vector3D Scale;
     Vector3D Shift;
-    Vector3D Rotation; // in degrees
-    Vector3D Translation; // in meters
+    Vector3D Rotation;
+    Vector3D Translation;
     Vector3D RGB;
 
     CubeConfig() = default;
@@ -38,7 +38,6 @@ public:
         Cubes.push_back(cube);
     }
 
-    // Getters
     const std::vector<std::string>& GetLibs() const {
         return Libs;
     }
@@ -47,7 +46,6 @@ public:
         return Cubes;
     }
 
-    // Debugging: Print the configuration
     void Print() const {
         std::cout << "Libraries:\n";
         for (const auto &lib : Libs) {

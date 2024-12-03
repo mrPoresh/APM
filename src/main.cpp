@@ -6,6 +6,7 @@
 #include "Set4LibInterfaces.hh"
 #include "AbstractInterp4Command.hh"
 #include "Sender.hh"
+#include "ProgramInterpreter.hh"
 
 #include <xercesc/sax2/SAX2XMLReader.hpp>
 #include <xercesc/sax2/XMLReaderFactory.hpp>
@@ -14,82 +15,97 @@
 using namespace std;
 using namespace xercesc;
 
-bool InitializeXMLParser() {
-    try {
-        XMLPlatformUtils::Initialize();
+// bool InitializeXMLParser() {
+//     try {
+//         XMLPlatformUtils::Initialize();
 
-    } catch (const XMLException& ex) {
-        char* message = XMLString::transcode(ex.getMessage());
-        cerr << "Error during initialization: " << message << "\n";
-        XMLString::release(&message);
+//     } catch (const XMLException& ex) {
+//         char* message = XMLString::transcode(ex.getMessage());
+//         cerr << "Error during initialization: " << message << "\n";
+//         XMLString::release(&message);
 
-        return false;
+//         return false;
+//     }
+//     return true;
+// }
+
+// bool ReadFile(const char* fileName, Configuration& config) {
+//     if (!InitializeXMLParser()) return false;
+
+//     unique_ptr<SAX2XMLReader> parser(XMLReaderFactory::createXMLReader());
+//     parser->setFeature(XMLUni::fgSAX2CoreNameSpaces, true);
+//     parser->setFeature(XMLUni::fgSAX2CoreValidation, true);
+//     parser->setFeature(XMLUni::fgXercesSchema, true);
+//     parser->setFeature(XMLUni::fgXercesValidationErrorAsFatal, true);
+
+//     unique_ptr<DefaultHandler> handler(new XMLInterp4Config(config));
+//     parser->setContentHandler(handler.get());
+//     parser->setErrorHandler(handler.get());
+
+//     try {
+//         if (!parser->loadGrammar("config/config.xsd", Grammar::SchemaGrammarType, true)) {
+//             cerr << "Failed to load grammar from config/config.xsd\n";
+//             return false;
+//         }
+
+//         parser->setFeature(XMLUni::fgXercesUseCachedGrammarInParse, true);
+//         parser->parse(fileName);
+
+//     } catch (const XMLException& ex) {
+//         char* message = XMLString::transcode(ex.getMessage());
+//         cerr << "XML Exception: " << message << "\n";
+//         XMLString::release(&message);
+
+//         return false;
+//     } catch (const SAXParseException& ex) {
+//         char* message = XMLString::transcode(ex.getMessage());
+//         cerr << "Parse Error: " << message << "\n";
+//         XMLString::release(&message);
+
+//         return false;
+//     } catch (...) {
+//         cerr << "Unexpected exception occurred.\n";
+//         return false;
+//     }
+
+//     return true;
+// }
+
+// bool RunPreprocessor(const char* fileName, istringstream& inputStream) {
+//     string command = "cpp -P " + string(fileName);
+//     char line[500];
+//     ostringstream outputStream;
+
+//     FILE* process = popen(command.c_str(), "r");
+//     if (!process) return false;
+
+//     while (fgets(line, sizeof(line), process)) {
+//         outputStream << line;
+//     }
+
+//     inputStream.str(outputStream.str());
+//     return pclose(process) == 0;
+// }
+
+int main(int argc, char* argv[]) {
+    if (argc < 3 || argc > 3) {
+        std::cerr << "Usage: " << argv[0] << " <config.xml> <commands.txt>" << std::endl;
+        return 1;
     }
-    return true;
-}
 
-bool ReadFile(const char* fileName, Configuration& config) {
-    if (!InitializeXMLParser()) return false;
+    const std::string configPath = argv[1];
+    const std::string commandsPath = argv[2];
 
-    unique_ptr<SAX2XMLReader> parser(XMLReaderFactory::createXMLReader());
-    parser->setFeature(XMLUni::fgSAX2CoreNameSpaces, true);
-    parser->setFeature(XMLUni::fgSAX2CoreValidation, true);
-    parser->setFeature(XMLUni::fgXercesSchema, true);
-    parser->setFeature(XMLUni::fgXercesValidationErrorAsFatal, true);
-
-    unique_ptr<DefaultHandler> handler(new XMLInterp4Config(config));
-    parser->setContentHandler(handler.get());
-    parser->setErrorHandler(handler.get());
-
-    try {
-        if (!parser->loadGrammar("config/config.xsd", Grammar::SchemaGrammarType, true)) {
-            cerr << "Failed to load grammar from config/config.xsd\n";
-            return false;
-        }
-
-        parser->setFeature(XMLUni::fgXercesUseCachedGrammarInParse, true);
-        parser->parse(fileName);
-
-    } catch (const XMLException& ex) {
-        char* message = XMLString::transcode(ex.getMessage());
-        cerr << "XML Exception: " << message << "\n";
-        XMLString::release(&message);
-
-        return false;
-    } catch (const SAXParseException& ex) {
-        char* message = XMLString::transcode(ex.getMessage());
-        cerr << "Parse Error: " << message << "\n";
-        XMLString::release(&message);
-
-        return false;
-    } catch (...) {
-        cerr << "Unexpected exception occurred.\n";
-        return false;
+    ProgramInterpreter interpreter;
+    if (!interpreter.Init(configPath, commandsPath)) {
+        return 1;
     }
 
-    return true;
-}
+    interpreter.Run();
 
-bool RunPreprocessor(const char* fileName, istringstream& inputStream) {
-    string command = "cpp -P " + string(fileName);
-    char line[500];
-    ostringstream outputStream;
-
-    FILE* process = popen(command.c_str(), "r");
-    if (!process) return false;
-
-    while (fgets(line, sizeof(line), process)) {
-        outputStream << line;
-    }
-
-    inputStream.str(outputStream.str());
-    return pclose(process) == 0;
-}
-
-int main() {
     // Load configuration file
-    Configuration config;
-    if (!ReadFile("config/config.xml", config)) return 1;
+    // Configuration config;
+    // if (!ReadFile("config/config.xml", config)) return 1;
 
     // Preprocess command file
     // istringstream commandStream;
@@ -110,39 +126,39 @@ int main() {
     // }
 
     // Set up plugins using the configuration
-    Set4LibInterfaces pluginManager;
-    const auto& libs = config.GetLibs();
-    config.Print();
-    //std::cout << std::flush;
+    // Set4LibInterfaces pluginManager;
+    // const auto& libs = config.GetLibs();
+    // config.Print();
+    // //std::cout << std::flush;
 
-    for (const auto& lib : libs) {
-        //std::cout << "Lib name " << lib << "\n";
+    // for (const auto& lib : libs) {
+    //     //std::cout << "Lib name " << lib << "\n";
 
-        // Use the library name as both the file name and the identifier (if no specific identifier is needed)
-        std::string identifier = lib.substr(lib.find_last_of('/') + 1); // Extract filename as identifier
-        identifier = identifier.substr(0, identifier.find_last_of('.'));
+    //     // Use the library name as both the file name and the identifier (if no specific identifier is needed)
+    //     std::string identifier = lib.substr(lib.find_last_of('/') + 1); // Extract filename as identifier
+    //     identifier = identifier.substr(0, identifier.find_last_of('.'));
 
-        //std::cout << "Lib identifier " << identifier << "\n";
+    //     //std::cout << "Lib identifier " << identifier << "\n";
 
-        if (!pluginManager.addLibrary(lib, identifier)) {
-            std::cerr << "Error loading library: " << lib << "\n";
-            return 1;
-        }
-    }
+    //     if (!pluginManager.addLibrary(lib, identifier)) {
+    //         std::cerr << "Error loading library: " << lib << "\n";
+    //         return 1;
+    //     }
+    // }
 
-    Sender sender(config.GetCubes());
-    if (!sender.Connect("127.0.0.1", 6217)) {
-        return 1;
-    }
+    // Sender sender(config.GetCubes());
+    // if (!sender.Connect("127.0.0.1", 6217)) {
+    //     return 1;
+    // }
 
-    // Start communication in a separate thread
-    sender.Start();
+    // Start communication in a separate thread (sleep)
+    // sender.Start();
 
     // Simulate additional logic or wait for completion
-    usleep(2000000); // Wait for 2 seconds
+    // usleep(2000000);
 
     // Stop communication
-    sender.Stop();
+    // sender.Stop();
 
     // Read and execute commands from commandStream # TODO: READ CMD FROM CONF
     // string commandName;
@@ -165,8 +181,29 @@ int main() {
     //     command->PrintCmd();
     // }
 
-    cout << "\nProgram End\n\n";
+    // cout << "\nProgram End\n\n";
 
     return 0;
 }
 
+
+
+
+
+
+/*
+
+
+
+|               1) Read conf.xml => parse conf => get obj data => set as vector
+|   Init Scene  2) Grab vectors => create obs. Object classes for each obj => add pointer to Obs. Scene class
+|               3) notes: Uniq obj name, check colision?, Scene must keep own mutex.
+
+|               |
+|   Main loop   |   set file name => line inside osstream for each line => 
+|               |       is Being Parralel == Yes => skip line, set parallel flag => for each next => | 
+|                                         == No                                                   => | create thread ((load comnd from plug. manager).execCmd(), scene, chanel)
+|                                                                                                    |
+|
+|                                                                                                    => thread join
+*/

@@ -8,18 +8,20 @@
 #include <atomic>
 #include <sstream>
 #include <cstring>
-#include <unistd.h> // For usleep
-#include <netinet/in.h> // For sockaddr_in
-#include <sys/socket.h> // For socket operations
-#include <arpa/inet.h> // For inet_addr
+#include <unistd.h>
+#include <netinet/in.h>     // For sockaddr_in
+#include <sys/socket.h>     // For socket operations
+#include <arpa/inet.h>      // For inet_addr
 #include "Configuration.hh"
 
 class Sender {
 private:
     int Socket; // Network socket descriptor
+    
     std::atomic<bool> ContinueLooping; // Control flag for the thread
     std::thread CommunicationThread; // Communication thread
-    std::mutex Mutex; // Mutex for thread safety
+    // Mutex => From "Scene"
+    
     const std::vector<CubeConfig>& Cubes; // Reference to the list of cubes
 
     /*!
@@ -34,6 +36,7 @@ private:
                 << " RotXYZ_deg=(" << cube.Rotation[0] << "," << cube.Rotation[1] << "," << cube.Rotation[2] << ")"
                 << " Trans_m=(" << cube.Translation[0] << "," << cube.Translation[1] << "," << cube.Translation[2] << ")"
                 << " RGB=(" << cube.RGB[0] << "," << cube.RGB[1] << "," << cube.RGB[2] << ")\n";
+
         return command.str();
     }
 
@@ -41,7 +44,8 @@ private:
      * \brief Sends a string message through the socket.
      */
     void Send(const std::string& message) {
-        std::lock_guard<std::mutex> lock(Mutex);
+        // std::lock_guard<std::mutex> lock(Mutex); => lock "Scene Mutex"
+
         ssize_t totalSent = 0;
         ssize_t toSend = message.size();
         const char* data = message.c_str();
@@ -66,11 +70,8 @@ private:
 
             std::string command = GenerateAddObjCommand(cube);
             Send(command);
-            usleep(100000); // Simulate delay
+            usleep(100000);///
         }
-
-        // Finalize communication
-        Send("Close\n");
     }
 
 public:
@@ -79,13 +80,14 @@ public:
      * \param cubes Reference to the list of cube configurations.
      */
     Sender(const std::vector<CubeConfig>& cubes) 
-        : Socket(-1), ContinueLooping(true), Cubes(cubes) {}
+        : Socket(0), ContinueLooping(true), Cubes(cubes) {}
 
     /*!
      * \brief Establishes a connection to the server.
      */
     bool Connect(const std::string& ipAddress, int port) {
         Socket = socket(AF_INET, SOCK_STREAM, 0);
+
         if (Socket < 0) {
             std::cerr << "*** Error opening socket.\n";
             return false;
