@@ -71,6 +71,16 @@ public:
      */
     AbstractInterp4Command* getCommandInstance() const { return commandInstance.get(); }
 
+    AbstractInterp4Command* CreateCmd() const {
+        auto createCmdFunc = reinterpret_cast<AbstractInterp4Command* (*)()>(dlsym(libraryHandle, "CreateCmd"));
+        if (!createCmdFunc) {
+            std::cerr << "Function CreateCmd not found in " << libraryName << "\n";
+            std::cerr << "dlerror: " << dlerror() << "\n";
+            return nullptr;
+        }
+        return createCmdFunc();
+    }
+
     /*!
      * \brief Destructor to ensure the library is unloaded on destruction.
      */

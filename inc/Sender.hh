@@ -29,7 +29,8 @@ private:
      * \param message The message to send.
      */
     void Send(const std::string& message) {
-        std::lock_guard<std::mutex> lock(Mutex);
+        std::cout << "Send:" << message << std::endl;
+        //std::lock_guard<std::mutex> lock(Mutex);
         ssize_t totalSent = 0;
         ssize_t toSend = message.size();
         const char* data = message.c_str();
@@ -85,6 +86,7 @@ public:
      * \param command The command string to send.
      */
     void SendCommand(const std::string& command) {
+        std::cout << "SendCommand:" << command << std::endl;
         if (!Connected) {
             std::cerr << "Sender is not connected to the server.\n";
             return;

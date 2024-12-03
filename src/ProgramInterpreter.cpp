@@ -4,6 +4,7 @@
 #include <memory>
 #include <string>
 #include <sstream>
+#include <thread>
 #include <xercesc/sax2/SAX2XMLReader.hpp>
 #include <xercesc/sax2/XMLReaderFactory.hpp>
 #include <xercesc/util/XMLString.hpp>
@@ -148,7 +149,7 @@ bool ProgramInterpreter::LoadCommands(const std::string& commandsPath) {
             return false;
         }
 
-        auto command = libInterface->getCommandInstance();
+        auto command = libInterface->CreateCmd();
         if (!command->ReadParams(stream)) {
             std::cerr << "Error reading parameters for command: " << cmdName << std::endl;
             return false;
@@ -176,6 +177,7 @@ bool ProgramInterpreter::LoadObjects() {
     std::cout << "Loading objects into the scene..." << std::endl;
 
     for (const auto& cubeConfig : config.GetCubes()) {
+        // Create a new Cuboid object for the scene
         auto* cuboid = new Cuboid(
             cubeConfig.Name,
             cubeConfig.Translation,
@@ -186,11 +188,47 @@ bool ProgramInterpreter::LoadObjects() {
 
         scene.AddMobileObj(cuboid);
         std::cout << "Added object: " << cuboid->GetName() << std::endl;
+
+        // Create a new instance of the 'Set' command for this object
+        LibInterface* libInterface = plugins.getInterface("Set");
+        if (!libInterface) {
+            std::cerr << "Error: Command 'Set' not found in plugins." << std::endl;
+            return false;
+        }
+
+        AbstractInterp4Command* setCommand = libInterface->CreateCmd();
+        if (!setCommand) {
+            std::cerr << "Error: Unable to create 'Set' command instance." << std::endl;
+            return false;
+        }
+
+        std::istringstream stream(
+            cubeConfig.Name + " " +
+            std::to_string(cubeConfig.Translation[0]) + " " +
+            std::to_string(cubeConfig.Translation[1]) + " " +
+            std::to_string(cubeConfig.Translation[2]) + " " +
+            std::to_string(cubeConfig.Rotation[0]) + " " +
+            std::to_string(cubeConfig.Rotation[1]) + " " +
+            std::to_string(cubeConfig.Rotation[2]) + " " +
+            std::to_string(cubeConfig.Scale[0]) + " " +
+            std::to_string(cubeConfig.Scale[1]) + " " +
+            std::to_string(cubeConfig.Scale[2]) + " " +
+            std::to_string(cubeConfig.RGB[0]) + " " +
+            std::to_string(cubeConfig.RGB[1]) + " " +
+            std::to_string(cubeConfig.RGB[2])
+        );
+
+        if (!setCommand->ReadParams(stream)) {
+            std::cerr << "Error: Unable to read parameters for 'Set' command." << std::endl;
+            delete setCommand;
+            return false;
+        }
+
+        config.AddStandaloneCommand(setCommand);
     }
 
     return true;
 }
-
 
 bool ProgramInterpreter::LoadLibraries() {
     std::cout << "Loading Libs..." << std::endl;
@@ -216,18 +254,29 @@ void ProgramInterpreter::Run() {
         return;
     }
 
-    // Test sending a dummy command
-    sender.SendCommand("AddObj Name=Dummy Scale=(1,1,1) Shift=(0,0,0) RGB=(255,0,0)\n");
+    std::cout << "Connection OK..." << std::endl;
 
-    std::cout << "Program finished execution." << std::endl;
+    const auto& commands = config.GetCommands();
+    std::list<std::thread> threads;
+
+    for (const auto& commandGroup : commands) {
+        for (auto* command : commandGroup) {
+            std::cout << "New command" << std::endl;
+            command->PrintCmd();
+
+            threads.emplace_back([command, this]() {
+                command->ExecCmd(scene, command->GetCmdName(), sender);
+            });
+        }
+
+        for (auto& thread : threads) {
+            if (thread.joinable()) {
+                thread.join();
+            }
+        }
+
+        threads.clear();
+    }
+
+    std::cout << "Program finished executing commands." << std::endl;
 }
-
-
-    // // Example: Iterate through Scene objects and perform actions
-    // for (const auto& mobileObj : config.GetMobileObjects()) {
-    //     auto* obj = scene.FindMobileObj(mobileObj->GetName().c_str());
-    //     if (obj) {
-    //         std::cout << "Executing logic for object: " << obj->GetName() << std::endl;
-    //         // Perform actions with obj
-    //     }
-    // }

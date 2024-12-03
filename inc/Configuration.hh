@@ -59,6 +59,7 @@ public:
      */
     void AddStandaloneCommand(AbstractInterp4Command* command) {
         Commands.push_back({command}); // Wrap the command in a single-element list
+        this->PrintCommands();
     }
 
     /*!
