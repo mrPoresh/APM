@@ -29,7 +29,7 @@ obj/ProgramInterpreter.o: src/ProgramInterpreter.cpp inc/ProgramInterpreter.hh
 
 obj/main.o: src/main.cpp inc/AbstractInterp4Command.hh inc/AbstractScene.hh\
             inc/AbstractComChannel.hh inc/xmlinterp.hh inc/LibInterface.hh\
-            inc/Set4LibInterfaces.hh inc/Sender.hh | obj
+            inc/Set4LibInterfaces.hh inc/Sender.hh inc/Cuboid.hh inc/Scene.hh | obj
 	g++ -c ${CPPFLAGS} -o obj/main.o src/main.cpp
 
 doc:

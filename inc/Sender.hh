@@ -2,50 +2,34 @@
 #define SENDER_HH
 
 #include <string>
-#include <vector>
-#include <thread>
 #include <mutex>
 #include <atomic>
-#include <sstream>
+#include <iostream>
 #include <cstring>
 #include <unistd.h>
 #include <netinet/in.h>     // For sockaddr_in
 #include <sys/socket.h>     // For socket operations
 #include <arpa/inet.h>      // For inet_addr
-#include "Configuration.hh"
+#include "AbstractComChannel.hh"
 
-class Sender {
+/*!
+ * \brief Handles communication with the graphical server.
+ *
+ * This class provides functionality to send preformatted commands
+ * to the graphical server using a network connection.
+ */
+class Sender : public AbstractComChannel {
 private:
-    int Socket; // Network socket descriptor
-    
-    std::atomic<bool> ContinueLooping; // Control flag for the thread
-    std::thread CommunicationThread; // Communication thread
-    // Mutex => From "Scene"
-    
-    const std::vector<CubeConfig>& Cubes; // Reference to the list of cubes
-
-    /*!
-     * \brief Generates an AddObj command string for the cube.
-     */
-    std::string GenerateAddObjCommand(const CubeConfig& cube) const {
-        std::ostringstream command;
-
-        command << "AddObj Name=" << cube.Name
-                << " Scale=(" << cube.Scale[0] << "," << cube.Scale[1] << "," << cube.Scale[2] << ")"
-                << " Shift=(" << cube.Shift[0] << "," << cube.Shift[1] << "," << cube.Shift[2] << ")"
-                << " RotXYZ_deg=(" << cube.Rotation[0] << "," << cube.Rotation[1] << "," << cube.Rotation[2] << ")"
-                << " Trans_m=(" << cube.Translation[0] << "," << cube.Translation[1] << "," << cube.Translation[2] << ")"
-                << " RGB=(" << cube.RGB[0] << "," << cube.RGB[1] << "," << cube.RGB[2] << ")\n";
-
-        return command.str();
-    }
+    int Socket;                        // Network socket descriptor
+    std::mutex Mutex;                  // Mutex for thread safety
+    std::atomic<bool> Connected;       // Indicates whether the connection is active
 
     /*!
      * \brief Sends a string message through the socket.
+     * \param message The message to send.
      */
     void Send(const std::string& message) {
-        // std::lock_guard<std::mutex> lock(Mutex); => lock "Scene Mutex"
-
+        std::lock_guard<std::mutex> lock(Mutex);
         ssize_t totalSent = 0;
         ssize_t toSend = message.size();
         const char* data = message.c_str();
@@ -54,6 +38,7 @@ private:
             ssize_t sent = write(Socket, data + totalSent, toSend);
             if (sent < 0) {
                 std::cerr << "*** Error sending message: " << strerror(errno) << std::endl;
+                Connected = false;
                 return;
             }
             totalSent += sent;
@@ -61,29 +46,17 @@ private:
         }
     }
 
-    /*!
-     * \brief Main function for the communication thread.
-     */
-    void CommunicationLoop() {
-        for (const auto& cube : Cubes) {
-            if (!ContinueLooping) break;
-
-            std::string command = GenerateAddObjCommand(cube);
-            Send(command);
-            usleep(100000);///
-        }
-    }
-
 public:
     /*!
      * \brief Constructor.
-     * \param cubes Reference to the list of cube configurations.
      */
-    Sender(const std::vector<CubeConfig>& cubes) 
-        : Socket(0), ContinueLooping(true), Cubes(cubes) {}
+    Sender() : Socket(0), Connected(false) {}
 
     /*!
      * \brief Establishes a connection to the server.
+     * \param ipAddress The server's IP address.
+     * \param port The server's port.
+     * \return True if the connection was successful, false otherwise.
      */
     bool Connect(const std::string& ipAddress, int port) {
         Socket = socket(AF_INET, SOCK_STREAM, 0);
@@ -103,31 +76,62 @@ public:
             return false;
         }
 
+        Connected = true;
         return true;
     }
 
     /*!
-     * \brief Starts the communication thread.
+     * \brief Sends a preformatted command to the server.
+     * \param command The command string to send.
      */
-    void Start() {
-        CommunicationThread = std::thread(&Sender::CommunicationLoop, this);
+    void SendCommand(const std::string& command) {
+        if (!Connected) {
+            std::cerr << "Sender is not connected to the server.\n";
+            return;
+        }
+        Send(command);
     }
 
     /*!
-     * \brief Stops the communication thread.
+     * \brief Implements AbstractComChannel::Init.
      */
-    void Stop() {
-        ContinueLooping = false;
-        if (CommunicationThread.joinable()) {
-            CommunicationThread.join();
-        }
+    void Init(int socket) override {
+        Socket = socket;
+        Connected = true;
+    }
+
+    /*!
+     * \brief Implements AbstractComChannel::GetSocket.
+     */
+    int GetSocket() const override {
+        return Socket;
+    }
+
+    /*!
+     * \brief Implements AbstractComChannel::LockAccess.
+     */
+    void LockAccess() override {
+        Mutex.lock();
+    }
+
+    /*!
+     * \brief Implements AbstractComChannel::UnlockAccess.
+     */
+    void UnlockAccess() override {
+        Mutex.unlock();
+    }
+
+    /*!
+     * \brief Implements AbstractComChannel::UseGuard.
+     */
+    std::mutex& UseGuard() override {
+        return Mutex;
     }
 
     /*!
      * \brief Destructor.
      */
     ~Sender() {
-        Stop();
         if (Socket >= 0) {
             close(Socket);
         }

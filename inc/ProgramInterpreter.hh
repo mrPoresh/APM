@@ -7,6 +7,7 @@
 #include "Set4LibInterfaces.hh"
 #include "Cuboid.hh"
 #include "Scene.hh"
+#include "Sender.hh"
 #include <xercesc/sax2/SAX2XMLReader.hpp>
 #include <xercesc/util/XMLString.hpp>
 
@@ -59,6 +60,7 @@ private:
     bool InitializeXMLParser();
 
     Scene scene; //!< Instance of the Scene class.
+    Sender sender;
     Configuration config;   //!< Configuration object.
     Set4LibInterfaces plugins;    //!< Keep Lis
 };

@@ -211,6 +211,18 @@ bool ProgramInterpreter::LoadLibraries() {
 void ProgramInterpreter::Run() {
     std::cout << "Running program..." << std::endl;
 
+    if (!sender.Connect("127.0.0.1", 6217)) {
+        std::cerr << "Failed to connect to graphical server." << std::endl;
+        return;
+    }
+
+    // Test sending a dummy command
+    sender.SendCommand("AddObj Name=Dummy Scale=(1,1,1) Shift=(0,0,0) RGB=(255,0,0)\n");
+
+    std::cout << "Program finished execution." << std::endl;
+}
+
+
     // // Example: Iterate through Scene objects and perform actions
     // for (const auto& mobileObj : config.GetMobileObjects()) {
     //     auto* obj = scene.FindMobileObj(mobileObj->GetName().c_str());
@@ -219,4 +231,3 @@ void ProgramInterpreter::Run() {
     //         // Perform actions with obj
     //     }
     // }
-}
