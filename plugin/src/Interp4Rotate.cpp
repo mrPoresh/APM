@@ -54,12 +54,59 @@ const char* Interp4Rotate::GetCmdName() const
 /*!
  *
  */
-bool Interp4Rotate::ExecCmd(AbstractScene &rScn, const char *sMobObjName, AbstractComChannel &rComChann)
-{
-  /*
-   *  Tu trzeba napisać odpowiedni kod.
-   */
-  return true;
+bool Interp4Rotate::ExecCmd(AbstractScene &rScn, const char *sMobObjName, AbstractComChannel &rComChann) {
+    std::cout << "ExecCmd Interp4Rotate for rotation" << std::endl;
+
+    AbstractMobileObj* obj = rScn.FindMobileObj(Object_name.c_str());
+    if (!obj) {
+        std::cerr << "Object not found: " << sMobObjName << std::endl;
+        return false;
+    }
+
+    const int fps = 30;
+    const double frameTimeMs = 1000.0 / fps;
+
+    double durationMs = (Angle / Angle_speed) * 1000.0;
+    int totalFrames = static_cast<int>(std::ceil(durationMs / frameTimeMs));
+
+    double stepAngle = Angle / totalFrames;
+
+    for (int frame = 0; frame < totalFrames; ++frame) {
+        {
+            std::lock_guard<std::mutex> lock(rScn.GetMutex());
+
+            if (Axis_name == "OX") {
+                obj->SetAng_Roll_deg(obj->GetAng_Roll_deg() + stepAngle);
+            } else if (Axis_name == "OY") {
+                obj->SetAng_Pitch_deg(obj->GetAng_Pitch_deg() + stepAngle);
+            } else if (Axis_name == "OZ") {
+                obj->SetAng_Yaw_deg(obj->GetAng_Yaw_deg() + stepAngle);
+            } else {
+                std::cerr << "Unknown axis: " << Axis_name << std::endl;
+                return false;
+            }
+        }
+
+        std::ostringstream commandStream;
+        commandStream << "UpdateObj Name=" << Object_name.c_str()
+                      << " RotXYZ_deg=(" << obj->GetAng_Roll_deg() << ","
+                      << obj->GetAng_Pitch_deg() << "," << obj->GetAng_Yaw_deg() << ")\n";
+
+        std::string command = commandStream.str();
+
+        rComChann.LockAccess();
+        try {
+            dynamic_cast<Sender&>(rComChann).SendCommand(command);
+        } catch (...) {
+            rComChann.UnlockAccess();
+            throw;
+        }
+        rComChann.UnlockAccess();
+
+        usleep(static_cast<int>(frameTimeMs * 1000));
+    }
+
+    return true;
 }
 
 

@@ -7,6 +7,10 @@
 #endif
 
 #include "AbstractInterp4Command.hh"
+#include "Sender.hh"
+
+#include <string>
+#include <sstream>
 
 /*!
  * \file

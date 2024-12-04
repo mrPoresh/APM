@@ -111,6 +111,14 @@ bool ProgramInterpreter::LoadCommands(const std::string& commandsPath) {
     while (std::getline(file, line)) {
         // Ignore empty lines or comments
         if (line.empty() || line[0] == '#' || line.substr(0, 2) == "//") {
+            if (line.find("#define") == 0) {
+                std::istringstream iss(line.substr(8));
+                std::string name;
+                double value;
+                iss >> name >> value;
+                config.AddConstant(name, value);
+            }
+
             continue;
         }
 
@@ -135,6 +143,8 @@ bool ProgramInterpreter::LoadCommands(const std::string& commandsPath) {
             inParallelBlock = false;
             continue;
         }
+
+        line = config.SubstituteConstants(line);
 
         //Parse command
         std::istringstream stream(line);

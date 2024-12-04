@@ -1,45 +1,35 @@
 #ifndef ABSTRACTSCENE_HH
 #define ABSTRACTSCENE_HH
 
-
 #include "AbstractMobileObj.hh"
+#include <mutex>
 
 /*!
- * \file 
- * \brief Zawiera definicję klasy abstrakcyjnej AbstractScene
- *
- *  Zawiera definicję klasy abstrakcyjnej AbstractScene.
- *  Wyznacza ona niezbędny interfejs klas pochodnych.
+ * \class AbstractScene
+ * \brief Abstract interface for managing a scene with mobile objects.
  */
-
- /*!
-  * \brief Definiuje interfejs klasy modelującej scenę roboczą.
-  *
-  * Definiuje interfejs klasy modelującej scenę roboczą,
-  * która zawiera kolekcję obiektów mobilnych.
-  */
-  class AbstractScene {
-       public:
-
+class AbstractScene {
+public:
     virtual ~AbstractScene() {}
-    
-       /*!
-        * \brief Wyszukuje obiekt o podanej pełnej kwalifikowanej nazwie.
-	*
-	*  Wyszukuje obiekt o podanej pełnej kwalifikowanej nazwie.
-	*  \param[in] sName - pełna kwalifikowana nazwa obiektu.
-	*  \return Jeśli obiekt zostanie znaleziony, to zwracany jest wskaźnik
-	*          na niego. W przypadku przeciwnym zwracany jest wskaźnik \p nullptr.
-        */
-        virtual AbstractMobileObj*  FindMobileObj(const char *sName) = 0;
-       /*!
-        * \brief Dodaje do sceny nowy obiekt.
-	*
-	*  Dodaje do sceny nowy obiekt. Obiekt ten musi mieć poprawnie
-	*  skonstruowaną pełną kwalifikowaną nazwę.
-	*  \param[in] pMobObj - wskaźnik na istniejący obiekt.
-        */
-        virtual void AddMobileObj(AbstractMobileObj *pMobObj) = 0;
-  };
+
+    /*!
+     * \brief Find a mobile object by its name.
+     * \param sName The fully qualified name of the object.
+     * \return Pointer to the object if found, nullptr otherwise.
+     */
+    virtual AbstractMobileObj* FindMobileObj(const char* sName) = 0;
+
+    /*!
+     * \brief Add a new mobile object to the scene.
+     * \param pMobObj Pointer to the mobile object to add.
+     */
+    virtual void AddMobileObj(AbstractMobileObj* pMobObj) = 0;
+
+    /*!
+     * \brief Provides access to the mutex for synchronization.
+     * \return Reference to the scene's mutex.
+     */
+    virtual std::mutex& GetMutex() = 0;
+};
 
 #endif

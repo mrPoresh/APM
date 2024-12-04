@@ -6,6 +6,7 @@
 #include <map>
 #include <iostream>
 #include <stdexcept>
+#include <sstream>
 #include "Vector3D.hh"
 #include "AbstractInterp4Command.hh"
 
@@ -39,6 +40,7 @@ private:
     std::map<std::string, std::string> LibCommands;   //!< Map of library paths to command names
     std::list<CubeConfig> Cubes;                      //!< List of cube configurations
     std::list<std::list<AbstractInterp4Command*>> Commands; //!< List of commands, including parallel groups
+    std::map<std::string, double> Constants;
 
 public:
     /*!
@@ -114,6 +116,37 @@ public:
      */
     const std::list<std::list<AbstractInterp4Command*>>& GetCommands() const {
         return Commands;
+    }
+
+    void AddConstant(const std::string& name, double value) {
+        Constants[name] = value;
+    }
+
+    const std::map<std::string, double>& GetConstants() const {
+        return Constants;
+    }
+
+    double GetConstantValue(const std::string& name) const {
+        auto it = Constants.find(name);
+        if (it != Constants.end()) {
+            return it->second;
+        }
+        throw std::runtime_error("Constant not found: " + name);
+    }
+
+    std::string SubstituteConstants(const std::string& commandLine) const {
+        std::istringstream iss(commandLine);
+        std::ostringstream oss;
+        std::string token;
+
+        while (iss >> token) {
+            if (Constants.count(token)) {
+                oss << Constants.at(token) << " ";
+            } else {
+                oss << token << " ";
+            }
+        }
+        return oss.str();
     }
 
     /*!
